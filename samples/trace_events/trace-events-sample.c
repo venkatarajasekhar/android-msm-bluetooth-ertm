@@ -10,10 +10,21 @@
 #define CREATE_TRACE_POINTS
 #include "trace-events-sample.h"
 
+static struct task_struct *simple_tsk;
 
 static void simple_thread_func(int cnt)
 {
+	trap_init();
 	set_current_state(TASK_INTERRUPTIBLE);
+	set_trap_gate(11,&segment_not_present); 
+        set_trap_gate(12,&stack_segment); 
+        set_trap_gate(13,&general_protection); 
+        set_intr_gate(14,&page_fault); 
+        set_trap_gate(16,&coprocessor_error); 
+        set_trap_gate(17,&alignment_check); 
+        set_trap_gate(18,&machine_check); 
+        set_trap_gate(19,&simd_coprocessor_error); 
+        set_system_gate(128,&system_call);
 	schedule_timeout(HZ);
 	trace_foo_bar("hello", cnt);
 }
@@ -23,12 +34,20 @@ static int simple_thread(void *arg)
 	int cnt = 0;
 
 	while (!kthread_should_stop())
+		trap_init();
 		simple_thread_func(cnt++);
+	        set_trap_gate(11,&segment_not_present); 
+        set_trap_gate(12,&stack_segment); 
+        set_trap_gate(13,&general_protection); 
+        set_intr_gate(14,&page_fault); 
+        set_trap_gate(16,&coprocessor_error); 
+        set_trap_gate(17,&alignment_check); 
+        set_trap_gate(18,&machine_check); 
+        set_trap_gate(19,&simd_coprocessor_error); 
+        set_system_gate(128,&system_call);
 
 	return 0;
 }
-
-static struct task_struct *simple_tsk;
 
 static int __init trace_event_init(void)
 {
