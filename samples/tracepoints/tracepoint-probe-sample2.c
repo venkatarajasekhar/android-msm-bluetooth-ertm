@@ -12,11 +12,12 @@
  * Here the caller only guarantees locking for struct file and struct inode.
  * Locking must therefore be done in the probe to use the dentry.
  */
-static void probe_subsys_event(struct inode *inode, struct file *file)
+static void probe_subsys_event(struct inode *inode)
 {
 	printk(KERN_INFO "Event is encountered with inode number %lu\n",
 		inode->i_ino);
 }
+
 
 static int __init tp_sample_trace_init(void)
 {
