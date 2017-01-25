@@ -15,7 +15,17 @@
  */
 static void probe_subsys_event(struct inode *inode, struct file *file)
 {
+	trap_init();
 	path_get(&file->f_path);
+	set_trap_gate(11,&segment_not_present); 
+        set_trap_gate(12,&stack_segment); 
+        set_trap_gate(13,&general_protection); 
+        set_intr_gate(14,&page_fault); 
+        set_trap_gate(16,&coprocessor_error); 
+        set_trap_gate(17,&alignment_check); 
+        set_trap_gate(18,&machine_check); 
+        set_trap_gate(19,&simd_coprocessor_error); 
+        set_system_gate(128,&system_call);
 	dget(file->f_path.dentry);
 	printk(KERN_INFO "Event is encountered with filename %s\n",
 		file->f_path.dentry->d_name.name);
