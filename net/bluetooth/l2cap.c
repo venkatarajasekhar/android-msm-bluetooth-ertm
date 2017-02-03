@@ -66,7 +66,7 @@ static u8 l2cap_fixed_chan[8] = { 0x02, };
 
 static const struct proto_ops l2cap_sock_ops;
 
-static struct workqueue_struct *_busy_wq;
+static struct workqueue_struct *_busy_wq = NULL;
 
 static struct bt_sock_list l2cap_sk_list = {
 	.lock = __RW_LOCK_UNLOCKED(l2cap_sk_list.lock)
@@ -122,7 +122,7 @@ static void l2cap_sock_clear_timer(struct sock *sk)
 /* ---- L2CAP channels ---- */
 static struct sock *__l2cap_get_chan_by_dcid(struct l2cap_chan_list *l, u16 cid)
 {
-	struct sock *s;
+	struct sock *s = NULL;
 	for (s = l->head; s; s = l2cap_pi(s)->next_c) {
 		if (l2cap_pi(s)->dcid == cid)
 			break;
@@ -132,10 +132,15 @@ static struct sock *__l2cap_get_chan_by_dcid(struct l2cap_chan_list *l, u16 cid)
 
 static struct sock *__l2cap_get_chan_by_scid(struct l2cap_chan_list *l, u16 cid)
 {
-	struct sock *s;
+	struct sock *s = NULL;
+	if(l){
 	for (s = l->head; s; s = l2cap_pi(s)->next_c) {
 		if (l2cap_pi(s)->scid == cid)
 			break;
+	}
+	}
+	else{
+	BT_DBG("INVALID Pointer:L2cap Channel List");
 	}
 	return s;
 }
@@ -144,18 +149,24 @@ static struct sock *__l2cap_get_chan_by_scid(struct l2cap_chan_list *l, u16 cid)
  * Returns locked socket */
 static inline struct sock *l2cap_get_chan_by_scid(struct l2cap_chan_list *l, u16 cid)
 {
-	struct sock *s;
-	read_lock(&l->lock);
-	s = __l2cap_get_chan_by_scid(l, cid);
+	struct sock *s = NULL; 
+	struct l2cap_chan_list *L2capChanlist = l; 
+	if(L2capChanlist){
+	read_lock(&L2capChanlist->lock);
+	s = __l2cap_get_chan_by_scid(L2capChanlist, cid);
 	if (s)
 		bh_lock_sock(s);
-	read_unlock(&l->lock);
+	read_unlock(&L2capChanlist->lock);
+	}
+	else{
+	BT_DBG("INVALID Pointer:L2cap Channel List");
+	}
 	return s;
 }
 
 static struct sock *__l2cap_get_chan_by_ident(struct l2cap_chan_list *l, u8 ident)
 {
-	struct sock *s;
+	struct sock *s = NULL;
 	for (s = l->head; s; s = l2cap_pi(s)->next_c) {
 		if (l2cap_pi(s)->ident == ident)
 			break;
@@ -200,8 +211,15 @@ static inline void __l2cap_chan_link(struct l2cap_chan_list *l, struct sock *sk)
 
 static inline void l2cap_chan_unlink(struct l2cap_chan_list *l, struct sock *sk)
 {
-	struct sock *next = l2cap_pi(sk)->next_c, *prev = l2cap_pi(sk)->prev_c;
-
+	struct l2cap_chan_list *L2cap_Channel_Unlink = l;
+	if(sk){
+	struct sock *next = l2cap_pi(sk)->next_c;
+	*prev = l2cap_pi(sk)->prev_c;
+	}
+	else{
+	BT_DBG("Invalid Pointer :struct sock * ");
+	}
+	if(L2cap_Channel_Unlink){
 	write_lock_bh(&l->lock);
 	if (sk == l->head)
 		l->head = next;
@@ -211,7 +229,10 @@ static inline void l2cap_chan_unlink(struct l2cap_chan_list *l, struct sock *sk)
 	if (prev)
 		l2cap_pi(prev)->next_c = next;
 	write_unlock_bh(&l->lock);
-
+	}
+	else{
+	BT_DBG("INVALID Pointer:L2cap Channel List");
+	}
 	__sock_put(sk);
 }
 
